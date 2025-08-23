@@ -1,0 +1,49 @@
+﻿@page "/chat"
+@using CoreApp.Models
+@using CoreApp.Services
+@inject AwsChatService ChatService
+@inject AwsEmbeddingService EmbeddingService
+@inject AwsVectorStoreService VectorStoreService
+@rendermode InteractiveServer
+
+<h3>AI Chat</h3>
+
+<div class="chat-box">
+    @foreach (var msg in messages)
+    {
+        <div class="@msg.Role">@msg.Role: @msg.Content</div>
+    }
+</div>
+
+<div class="chat-input-area">
+    <input type="text" @bind="userInput" @bind:event="oninput" placeholder="Type your message..." class="chat-input" />
+    <button @onclick="SendMessage" class="chat-button">Send</button>
+</div>
+
+@code {
+    private string userInput = "";
+    private List<ChatMessage> messages = new();
+    private string bucketName = "sri-test-vector";
+    private string indexName = "testindex1";
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(userInput)) return;
+
+        messages.Add(new ChatMessage { Role = "user", Content = userInput });
+
+        var embedding = await EmbeddingService.GenerateEmbeddingAsync(userInput);
+        var relatedDocs = await VectorStoreService.QueryEmbeddingAsync(bucketName, indexName, embedding);
+
+        if (relatedDocs.Any())
+        {
+            messages.Add(new ChatMessage { Role = "assistant", Content = $"📚 Related documents:\n{string.Join("\n", relatedDocs)}" });
+        }
+
+        var response = await ChatService.GetResponseAsync(messages);
+        messages.Add(new ChatMessage { Role = "assistant", Content = response });
+
+        userInput = "";
+        StateHasChanged(); // Refresh UI
+    }
+}
