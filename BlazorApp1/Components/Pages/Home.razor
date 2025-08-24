@@ -1,7 +1,60 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<div class="home-container">
+    <h1>RAG Demo Application</h1>
 
-<h1>Hello, world!</h1>
+    <p>
+        This solution demonstrates a modern <strong>Retrieval-Augmented Generation (RAG)</strong> architecture using
+        <strong>AWS Bedrock</strong> services. It integrates <strong>Amazon Titan</strong> for vector embeddings and
+        <strong>Amazon Nova</strong> for conversational AI, with vector storage and semantic search powered by
+        <strong>S3Vector</strong>.
+    </p>
 
-Welcome to your new app.
+    <h2>🧱 Architecture Overview</h2>
+    <ul>
+        <li><strong>Chat Model:</strong> <code>amazon.nova-pro-v1:0</code></li>
+        <li><strong>Embedding Model:</strong> <code>amazon.titan-embed-text-v2:0</code></li>
+        <li><strong>S3 Vector Bucket:</strong> <code>sri-test-vector</code></li>
+        <li><strong>Vector Index:</strong> <code>testindex1</code></li>
+    </ul>
+
+    <h2>📦 Project Structure</h2>
+    <ul>
+        <li><strong>Blazor Web App</strong> with Teams-style interactive chat UI</li>
+        <li><strong>Services</strong> for chat, embedding, and vector storage</li>
+        <li><strong>Global configuration</strong> via dependency injection</li>
+    </ul>
+
+    <h2>🧩 Interfaces & Services</h2>
+    <ul>
+        <li><code>AwsChatService</code> – Connects to Amazon Nova for chat responses</li>
+        <li><code>AwsEmbeddingService</code> – Generates 1024-dimension embeddings using Titan</li>
+        <li><code>AwsVectorStoreService</code> – Stores and queries vectors in S3Vector</li>
+    </ul>
+
+    <h2>🛠️ Design & Best Practices</h2>
+    <ul>
+        <li>Modular service architecture with DI</li>
+        <li>Line-by-line document embedding with UUID keys</li>
+        <li>Semantic search with metadata support</li>
+        <li>Responsive UI with sticky input and keyboard interaction</li>
+    </ul>
+
+    <h2>🧪 Testing</h2>
+    <ul>
+        <li>Tested with various document formats and chat prompts</li>
+        <li>Validated embedding dimensions and index compatibility</li>
+        <li>Handled edge cases like empty lines and invalid paths</li>
+    </ul>
+
+    <h2>🚀 Deployment</h2>
+    <ul>
+        <li>Hosted on <strong>IIS</strong> running in an <strong>AWS EC2 Windows Server</strong></li>
+        <li>Configured with HTTPS, firewall rules, and environment-specific settings</li>
+        <li>Supports scaling and future integration with OpenSearch or Kendra</li>
+    </ul>
+
+    <p class="footer-note">
+        Built by Srinivasan Govintharaju – leveraging the power of AWS AI and Blazor.
+    </p>
+</div>

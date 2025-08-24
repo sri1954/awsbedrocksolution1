@@ -1,10 +1,6 @@
 ﻿using Amazon.S3Vectors;
 using Amazon.S3Vectors.Model;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Numerics;
 
 namespace CoreApp.Services
 {
@@ -61,7 +57,7 @@ namespace CoreApp.Services
                 {
                     foreach (var meta in vector.Metadata.AsDictionary())
                     {
-                        Console.WriteLine($"  {meta.Key}: {meta.Value}");
+                        //Console.WriteLine($"  {meta.Key}: {meta.Value}");
                         results.Add(meta.Key + "-" + meta.Value);
                     }
                 }
@@ -69,5 +65,90 @@ namespace CoreApp.Services
 
             return results;
         }
+
+        public async Task<List<string>> ListVectorBucketsAsync()
+        {
+            var vectorBuckets = new List<string>();
+            string nextToken = null!;
+
+            do
+            {
+                var request = new ListVectorBucketsRequest
+                {
+                    MaxResults = 100, // Adjust as needed
+                    NextToken = nextToken
+                };
+
+                var response = await client.ListVectorBucketsAsync(request);
+                foreach (var bucket in response.VectorBuckets)
+                {
+                    vectorBuckets.Add(bucket.VectorBucketName);
+                }
+
+                nextToken = response.NextToken;
+
+            } while (nextToken != null);
+
+            return vectorBuckets;
+        }
+
+        public async Task<List<string>> ListAllKeysAsync(string bucketName, string indexName)
+        {
+            var keys = new List<string>();
+            string nextToken = null!;
+
+            do
+            {
+                var request = new ListVectorsRequest
+                {
+                    VectorBucketName = bucketName,
+                    IndexName = indexName,
+                    NextToken = nextToken,
+                    MaxResults = 100 // adjust as needed
+                };
+
+                var response = await client.ListVectorsAsync(request);
+                if (response.Vectors != null)
+                {
+                    foreach (var vec in response.Vectors)
+                    {
+                        keys.Add(vec.Key);
+                    }
+                }
+
+                nextToken = response.NextToken;
+            } while (!string.IsNullOrEmpty(nextToken));
+
+            return keys;
+        }
+
+        public async Task<List<GetOutputVector>> GetVectorsAsync(string bucketName, string indexName, List<string> keys)
+        {
+            var request = new GetVectorsRequest
+            {
+                VectorBucketName = bucketName,
+                IndexName = indexName,
+                Keys = keys,
+                ReturnData = true,
+                ReturnMetadata = true
+            };
+
+            var response = await client.GetVectorsAsync(request);
+            return response.Vectors ?? new List<GetOutputVector>();
+        }
+
+        public async Task<bool> DeleteVectorAsync(string bucketName, string indexName, string key)
+        {
+            var request = new DeleteVectorsRequest
+            {
+                VectorBucketName = bucketName,
+                IndexName = indexName,
+                Keys = new List<string> { key }
+            };
+
+            var response = await client.DeleteVectorsAsync(request);
+            return response.HttpStatusCode == System.Net.HttpStatusCode.OK;
+        }
     }
 }
+

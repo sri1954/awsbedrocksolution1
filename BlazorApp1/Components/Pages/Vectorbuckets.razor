@@ -1,0 +1,57 @@
+﻿@page "/vectorbuckets"
+@using CoreApp.Models
+@using CoreApp.Services
+@using Microsoft.IdentityModel.Tokens
+@using System.Text.Json
+@inject AwsEmbeddingService EmbeddingService
+@inject AwsVectorStoreService VectorStoreService
+@inject AIAppSettings AppSettings
+@inject NavigationManager NavManager
+@rendermode InteractiveServer
+
+<h3 class="text-xl font-bold mb-3">S3 Vector Buckets</h3>
+
+@if (vectorBuckets == null)
+{
+    <p><em>Loading vector buckets...</em></p>
+}
+else if (vectorBuckets.Count == 0)
+{
+    <p>No vector buckets found.</p>
+}
+else
+{
+    <table class="table table-striped table-bordered w-100">
+        <thead>
+            <tr>
+                <th>Bucket Name</th>
+                <th style="width:150px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var bucket in vectorBuckets)
+            {
+                <tr>
+                    <td>@bucket</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" @onclick="() => GoToBucketKeys(bucket)">View Keys</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<string>? vectorBuckets;
+
+    protected override async Task OnInitializedAsync()
+    {
+        vectorBuckets = await VectorStoreService.ListVectorBucketsAsync();
+    }
+
+    private void GoToBucketKeys(string bucket)
+    {
+        NavManager.NavigateTo($"/bucketkeys?bucket={bucket}");
+    }
+}

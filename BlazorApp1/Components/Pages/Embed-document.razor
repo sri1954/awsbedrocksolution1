@@ -1,0 +1,64 @@
+﻿@page "/embed-document"
+@using CoreApp.Models
+@using CoreApp.Services
+@inject AwsEmbeddingService EmbeddingService
+@inject AwsVectorStoreService VectorStoreService
+@inject AIAppSettings AppSettings
+
+@rendermode InteractiveServer
+
+<h3>Document Embedding</h3>
+
+<div class="embed-container">
+    <label for="filePath">Enter file path:</label>
+    <InputText @bind-Value="filePath" class="file-input" />
+    <button @onclick="ProcessDocument" class="submit-button">Embed & Store</button>
+
+    @if (statusMessage != null)
+    {
+        <p>@statusMessage</p>
+    }
+</div>
+
+@code {
+    private string filePath = "";
+    private string? statusMessage;
+    private string? bucketName;
+    private string? indexName;
+
+    protected override void OnInitialized()
+    {
+        bucketName = AppSettings.BucketName!;
+        indexName = AppSettings.IndexName!;
+    }
+
+    private async Task ProcessDocument()
+    {
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+        {
+            statusMessage = "Invalid file path.";
+            return;
+        }
+
+        var lines = await File.ReadAllLinesAsync(filePath);
+        int successCount = 0;
+
+        foreach (var line in lines.Where(l => !string.IsNullOrWhiteSpace(l)))
+        {
+            try
+            {
+                var embedding = await EmbeddingService.GenerateEmbeddingAsync(line);
+                var key = $"line-{Guid.NewGuid()}";
+                await VectorStoreService.InsertEmbeddingAsync(bucketName!, indexName!, key, line, embedding);
+                successCount++;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error embedding line: {ex.Message}");
+            }
+        }
+
+        statusMessage = $"Successfully embedded and stored {successCount} lines.";
+    }
+}
+

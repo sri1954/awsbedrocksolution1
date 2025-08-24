@@ -1,0 +1,82 @@
+﻿@page "/vectors/{Key}"
+@using CoreApp.Models
+@using CoreApp.Services
+@using Microsoft.IdentityModel.Tokens
+@using System.Text.Json
+@inject AwsEmbeddingService EmbeddingService
+@inject AwsVectorStoreService VectorStoreService
+@inject AIAppSettings AppSettings
+@inject NavigationManager NavManager
+@rendermode InteractiveServer
+
+<h3 class="text-xl font-bold mb-3">Vector Details for Key: @Key</h3>
+<button class="btn btn-secondary mb-3" @onclick="GoBack">⬅ Back to Buckets</button>
+
+@if (vector == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="p-4 shadow rounded border bg-light">
+        <h4>Key: @vector.Key</h4>
+
+        @if (!vector.Metadata.IsNull())
+        {
+            <p><strong>Metadata:</strong></p>
+            <pre>@DocumentToJson(vector.Metadata)</pre>
+        }
+
+        @if (vector.Data?.Float32 != null)
+        {
+            <p><strong>Vectors:</strong> 
+            @string.Join(", ", vector.Data.Float32)</p>
+        }
+
+        <button class="btn btn-secondary mb-3" @onclick="GoBack">⬅ Back to Buckets</button>
+
+    </div>
+}
+
+@code {
+    [Parameter] public string Key { get; set; }
+    private Amazon.S3Vectors.Model.GetOutputVector vector;
+    private string? bucketName;
+    private string? indexName;
+
+    protected override void OnInitialized()
+    {
+        bucketName = AppSettings.BucketName!;
+        indexName = AppSettings.IndexName!;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await VectorStoreService.GetVectorsAsync(bucketName!, indexName!, new List<string> { Key });
+        vector = result.Count > 0 ? result[0] : null!;
+    }
+
+    private void GoBack()
+    {
+        NavManager.NavigateTo("/vectorbuckets");
+    }
+
+    private static string DocumentToJson(Amazon.Runtime.Documents.Document doc)
+    {
+        return System.Text.Json.JsonSerializer.Serialize(DocumentToObject(doc),
+            new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private static object? DocumentToObject(Amazon.Runtime.Documents.Document doc)
+    {
+        if (doc.IsNull()) return null;
+        if (doc.IsString()) return doc.AsString();
+        if (doc.IsBool()) return doc.AsBool();
+        if (doc.IsInt()) return doc.AsInt();
+        if (doc.IsLong()) return doc.AsLong();
+        if (doc.IsDouble()) return doc.AsDouble();
+        if (doc.IsList()) return doc.AsList().Select(DocumentToObject).ToList();
+        if (doc.IsDictionary()) return doc.AsDictionary().ToDictionary(kv => kv.Key, kv => DocumentToObject(kv.Value));
+        return null;
+    }
+}

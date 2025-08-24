@@ -1,3 +1,4 @@
+using BlazorApp1;
 using BlazorApp1.Components;
 using BlazorApp1.Components.Account;
 using BlazorApp1.Data;
@@ -5,6 +6,7 @@ using CoreApp.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +38,11 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
+builder.Services.Configure<AIAppSettings>(
+    builder.Configuration.GetSection("AIAppSettings"));
+
+builder.Services.AddSingleton(resolver =>
+    resolver.GetRequiredService<IOptions<AIAppSettings>>().Value);
 
 builder.Services.AddSingleton<AwsChatService>();
 builder.Services.AddSingleton<AwsEmbeddingService>();

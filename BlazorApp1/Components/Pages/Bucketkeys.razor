@@ -1,0 +1,136 @@
+﻿@page "/bucketkeys"
+@using Amazon.Runtime.Documents
+@using CoreApp.Models
+@using CoreApp.Services
+@using Microsoft.IdentityModel.Tokens
+@using System.Text.Json
+@inject AwsEmbeddingService EmbeddingService
+@inject AwsVectorStoreService VectorStoreService
+@inject AIAppSettings AppSettings
+@inject NavigationManager NavManager
+@rendermode InteractiveServer
+
+<h3 class="text-xl font-bold mb-3">Vector Bucket: {@BucketName} Keys</h3>
+
+@if (allKeys == null)
+{
+    <p><em>Loading keys...</em></p>
+}
+else if (allKeys.Count == 0)
+{
+    <p>No vector keys found in bucket.</p>
+}
+else
+{
+    <table class="table table-striped table-bordered w-100">
+        <thead>
+            <tr>
+                <th>Key</th>
+                <th style="width:150px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var key in allKeys)
+            {
+                <tr>
+                    <td>
+                        <a @onclick="() => GoToVectors(key)" style="cursor:pointer">@key</a>
+                    </td>
+                    <td>
+                        <button class="btn btn-info btn-sm me-2" @onclick="() => GoToVectors(key)">View</button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => DeleteKey(key)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (selectedVector != null)
+{
+    <div class="mt-4 p-3 border rounded">
+        <h4>Selected Vector Details</h4>
+        <p><strong>Key:</strong> @selectedVector.Key</p>
+
+        @if (selectedVector.Data?.Float32 != null)
+        {
+            <p><strong>Vector:</strong> [@string.Join(", ", selectedVector.Data.Float32)]</p>
+        }
+
+        @if (!selectedVector.Metadata.IsNull())
+        {
+            <p><strong>Metadata</strong></p>
+            <pre>@JsonSerializer.Serialize(DocumentToObject(selectedVector.Metadata),
+                        new JsonSerializerOptions { WriteIndented = true })</pre>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "bucket")]
+    public string? BucketName { get; set; }
+    private List<string>? allKeys;
+    private string? bucketName;
+    private string? indexName;
+
+    protected override void OnInitialized()
+    {
+        bucketName = AppSettings.BucketName!;
+        indexName = AppSettings.IndexName!;
+    }
+
+    private Amazon.S3Vectors.Model.GetOutputVector selectedVector = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(BucketName))
+        {
+            allKeys = await VectorStoreService.ListAllKeysAsync(BucketName, indexName!);
+        }
+        else
+        {
+            allKeys = new List<string>();
+        }
+        //allKeys = await VectorStoreService.ListAllKeysAsync(bucketName!, indexName!);
+    }
+
+    private void GoToVectors(string key)
+    {
+        NavManager.NavigateTo($"/vectors/{key}");
+    }
+
+    private async Task LoadVector(string key)
+    {
+        var result = await VectorStoreService.GetVectorsAsync(bucketName!, indexName!, new List<string> { key });
+        selectedVector = result.Count > 0 ? result[0] : null!;
+    }
+
+    private async Task DeleteKey(string key)
+    {
+        bool success = await VectorStoreService.DeleteVectorAsync(bucketName!, indexName!, key);
+        if (success)
+        {
+            allKeys!.Remove(key);
+            if (selectedVector?.Key == key)
+            {
+                selectedVector = null!;
+            }
+            StateHasChanged();
+        }
+    }
+
+    private static object? DocumentToObject(Document doc)
+    {
+        if (doc.IsNull()) return null;
+        if (doc.IsString()) return doc.AsString();
+        if (doc.IsBool()) return doc.AsBool();
+        if (doc.IsInt()) return doc.AsInt();
+        if (doc.IsLong()) return doc.AsLong();
+        if (doc.IsDouble()) return doc.AsDouble();
+        if (doc.IsList()) return doc.AsList().Select(DocumentToObject).ToList();
+        if (doc.IsDictionary())
+            return doc.AsDictionary().ToDictionary(kv => kv.Key, kv => DocumentToObject(kv.Value));
+        return null;
+    }
+}

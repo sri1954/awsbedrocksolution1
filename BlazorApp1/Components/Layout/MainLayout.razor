@@ -6,10 +6,18 @@
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; height: 40px; margin: 5px; padding: 0 24px; ">
 
+            <!-- Left-aligned image -->
+            <img src="images/logo-colour-default.png" alt="Header Image"
+                 style="height: 100%; object-fit: contain;" />
+
+            <!-- Right-aligned link -->
+            <a href="https://www.resolutionlife.com/"
+               style="font-size: 16px; font-weight: 500; color: #333; text-decoration: none; transition: color 0.3s;">
+                About
+            </a>
+        </div>
         <article class="content px-4">
             @Body
         </article>
