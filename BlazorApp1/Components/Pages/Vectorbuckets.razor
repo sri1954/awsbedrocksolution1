@@ -7,6 +7,7 @@
 @inject AwsVectorStoreService VectorStoreService
 @inject AIAppSettings AppSettings
 @inject NavigationManager NavManager
+@inject GlobalState GlobalState
 @rendermode InteractiveServer
 
 <h3 class="text-xl font-bold mb-3">S3 Vector Buckets</h3>
@@ -52,6 +53,8 @@ else
 
     private void GoToBucketKeys(string bucket)
     {
+        // Store globally
+        GlobalState.CurrentBucket = bucket;
         NavManager.NavigateTo($"/bucketkeys?bucket={bucket}");
     }
 }

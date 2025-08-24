@@ -7,10 +7,12 @@
 @inject AwsVectorStoreService VectorStoreService
 @inject AIAppSettings AppSettings
 @inject NavigationManager NavManager
+@inject GlobalState GlobalState
 @rendermode InteractiveServer
 
 <h3 class="text-xl font-bold mb-3">Vector Details for Key: @Key</h3>
 <button class="btn btn-secondary mb-3" @onclick="GoBack">⬅ Back to Buckets</button>
+<button class="btn btn-secondary mb-3" @onclick="GoBack1">⬅ Back to Bucket Keys</button>
 
 @if (vector == null)
 {
@@ -34,13 +36,14 @@ else
         }
 
         <button class="btn btn-secondary mb-3" @onclick="GoBack">⬅ Back to Buckets</button>
+        <button class="btn btn-secondary mb-3" @onclick="GoBack1">⬅ Back to Bucket Keys</button>
 
     </div>
 }
 
 @code {
-    [Parameter] public string Key { get; set; }
-    private Amazon.S3Vectors.Model.GetOutputVector vector;
+    [Parameter] public string? Key { get; set; }
+    private Amazon.S3Vectors.Model.GetOutputVector? vector;
     private string? bucketName;
     private string? indexName;
 
@@ -59,6 +62,12 @@ else
     private void GoBack()
     {
         NavManager.NavigateTo("/vectorbuckets");
+    }
+
+    private void GoBack1()
+    {
+        // Navigate back to BucketKeys for the same bucket
+        NavManager.NavigateTo($"/bucketkeys?bucket={GlobalState.CurrentBucket}");
     }
 
     private static string DocumentToJson(Amazon.Runtime.Documents.Document doc)

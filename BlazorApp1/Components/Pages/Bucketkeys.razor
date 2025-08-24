@@ -8,9 +8,10 @@
 @inject AwsVectorStoreService VectorStoreService
 @inject AIAppSettings AppSettings
 @inject NavigationManager NavManager
+@inject GlobalState GlobalState
 @rendermode InteractiveServer
 
-<h3 class="text-xl font-bold mb-3">Vector Bucket: {@BucketName} Keys</h3>
+<h3 class="text-xl font-bold mb-3">Vector Bucket: {@GlobalState.CurrentBucket} Keys</h3>
 
 @if (allKeys == null)
 {
@@ -78,6 +79,7 @@ else
     {
         bucketName = AppSettings.BucketName!;
         indexName = AppSettings.IndexName!;
+        BucketName = GlobalState.CurrentBucket;    
     }
 
     private Amazon.S3Vectors.Model.GetOutputVector selectedVector = null!;

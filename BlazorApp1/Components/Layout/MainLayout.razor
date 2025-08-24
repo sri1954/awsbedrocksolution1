@@ -1,18 +1,20 @@
 ﻿@inherits LayoutComponentBase
 
 <div class="page">
-    <div class="sidebar">
+    <div class="sidebar p-3">
         <NavMenu />
     </div>
 
     <main>
         <div style="display: flex; align-items: center; justify-content: space-between; height: 40px; margin: 5px; padding: 0 24px; ">
+            <!-- Left: Logo + Core Technology -->
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <img src="images/logo-colour-default.png" alt="Header Image"
+                     style="height: 30px; width: auto; object-fit: contain;" />
+                <span style="font-size: 20px; font-weight: 600; color: #333; line-height: 1; margin-top: 15px;">Core Technology</span>
+            </div>
 
-            <!-- Left-aligned image -->
-            <img src="images/logo-colour-default.png" alt="Header Image"
-                 style="height: 100%; object-fit: contain;" />
-
-            <!-- Right-aligned link -->
+            <!-- Right-aligned link --> 
             <a href="https://www.resolutionlife.com/"
                style="font-size: 16px; font-weight: 500; color: #333; text-decoration: none; transition: color 0.3s;">
                 About

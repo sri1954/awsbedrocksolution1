@@ -44,6 +44,7 @@ builder.Services.Configure<AIAppSettings>(
 builder.Services.AddSingleton(resolver =>
     resolver.GetRequiredService<IOptions<AIAppSettings>>().Value);
 
+builder.Services.AddScoped<GlobalState>();
 builder.Services.AddSingleton<AwsChatService>();
 builder.Services.AddSingleton<AwsEmbeddingService>();
 builder.Services.AddSingleton<AwsVectorStoreService>();
