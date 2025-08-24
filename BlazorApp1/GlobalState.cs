@@ -3,5 +3,6 @@
     public class GlobalState
     {
         public string CurrentBucket { get; set; } = string.Empty;
+        public string CurrentIndex { get; set; } = string.Empty;
     }
 }

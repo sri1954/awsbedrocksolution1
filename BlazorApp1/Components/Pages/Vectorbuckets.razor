@@ -1,13 +1,9 @@
 ﻿@page "/vectorbuckets"
 @using CoreApp.Models
 @using CoreApp.Services
-@using Microsoft.IdentityModel.Tokens
-@using System.Text.Json
-@inject AwsEmbeddingService EmbeddingService
 @inject AwsVectorStoreService VectorStoreService
-@inject AIAppSettings AppSettings
-@inject NavigationManager NavManager
 @inject GlobalState GlobalState
+@inject NavigationManager NavManager
 @rendermode InteractiveServer
 
 <h3 class="text-xl font-bold mb-3">S3 Vector Buckets</h3>
@@ -35,7 +31,14 @@ else
                 <tr>
                     <td>@bucket</td>
                     <td>
-                        <button class="btn btn-primary btn-sm" @onclick="() => GoToBucketKeys(bucket)">View Keys</button>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary btn-sm" @onclick="() => ShowIndexes(bucket)">
+                                Select Index
+                            </button>
+                            @* <button class="btn btn-secondary btn-sm" @onclick="() => GoToBucketKeys(bucket)">
+                                View Keys
+                            </button> *@
+                        </div>
                     </td>
                 </tr>
             }
@@ -43,8 +46,52 @@ else
     </table>
 }
 
+<!-- Index selection modal -->
+@if (showModal && indexes != null)
+{
+    <div class="modal fade show" style="display:block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Indexes in @GlobalState.CurrentBucket</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Index</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var index in indexes)
+                            {
+                                <tr>
+                                    <td>@index</td>
+                                    <td>
+                                        <button class="btn btn-success btn-sm" @onclick="() => SelectIndex(index)">
+                                            Select
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" @onclick="() => DeleteIndex(index)">
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<string>? vectorBuckets;
+    private List<string>? indexes;
+    private bool showModal = false;
+    private string? selectedBucket;
 
     protected override async Task OnInitializedAsync()
     {
@@ -53,8 +100,45 @@ else
 
     private void GoToBucketKeys(string bucket)
     {
-        // Store globally
         GlobalState.CurrentBucket = bucket;
         NavManager.NavigateTo($"/bucketkeys?bucket={bucket}");
+    }
+
+    private async Task ShowIndexes(string bucket)
+    {
+        selectedBucket = bucket;
+        GlobalState.CurrentBucket = bucket;
+
+        indexes = await VectorStoreService.ListIndexesAsync(bucket);
+        showModal = true;
+    }
+
+    private void SelectIndex(string index)
+    {
+        GlobalState.CurrentIndex = index;
+        showModal = false;
+
+        NavManager.NavigateTo("/bucketkeys");
+    }
+
+    private async Task DeleteIndex(string index)
+    {
+        try
+        {
+            await VectorStoreService.DeleteIndexAsync(GlobalState.CurrentBucket, index);
+
+            // Refresh the list after deletion
+            indexes = await VectorStoreService.ListIndexesAsync(GlobalState.CurrentBucket);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting index {index}: {ex.Message}");
+        }
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
     }
 }

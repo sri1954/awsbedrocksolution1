@@ -71,15 +71,14 @@ else
     [Parameter]
     [SupplyParameterFromQuery(Name = "bucket")]
     public string? BucketName { get; set; }
+    public string? IndexName { get; set; }
+
     private List<string>? allKeys;
-    private string? bucketName;
-    private string? indexName;
 
     protected override void OnInitialized()
     {
-        bucketName = AppSettings.BucketName!;
-        indexName = AppSettings.IndexName!;
         BucketName = GlobalState.CurrentBucket;    
+        IndexName = GlobalState.CurrentIndex;
     }
 
     private Amazon.S3Vectors.Model.GetOutputVector selectedVector = null!;
@@ -88,13 +87,12 @@ else
     {
         if (!string.IsNullOrEmpty(BucketName))
         {
-            allKeys = await VectorStoreService.ListAllKeysAsync(BucketName, indexName!);
+            allKeys = await VectorStoreService.ListAllKeysAsync(BucketName, IndexName!);
         }
         else
         {
             allKeys = new List<string>();
         }
-        //allKeys = await VectorStoreService.ListAllKeysAsync(bucketName!, indexName!);
     }
 
     private void GoToVectors(string key)
@@ -104,13 +102,13 @@ else
 
     private async Task LoadVector(string key)
     {
-        var result = await VectorStoreService.GetVectorsAsync(bucketName!, indexName!, new List<string> { key });
+        var result = await VectorStoreService.GetVectorsAsync(BucketName!, IndexName!, new List<string> { key });
         selectedVector = result.Count > 0 ? result[0] : null!;
     }
 
     private async Task DeleteKey(string key)
     {
-        bool success = await VectorStoreService.DeleteVectorAsync(bucketName!, indexName!, key);
+        bool success = await VectorStoreService.DeleteVectorAsync(BucketName!, IndexName!, key);
         if (success)
         {
             allKeys!.Remove(key);

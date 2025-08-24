@@ -149,6 +149,29 @@ namespace CoreApp.Services
             var response = await client.DeleteVectorsAsync(request);
             return response.HttpStatusCode == System.Net.HttpStatusCode.OK;
         }
+
+        public async Task<List<string>> ListIndexesAsync(string bucketName)
+        {
+            var client = new AmazonS3VectorsClient();
+
+            var response = await client.ListIndexesAsync(new ListIndexesRequest
+            {
+                VectorBucketName = bucketName
+            });
+
+            return response.Indexes.Select(i => i.IndexName).ToList();
+        }
+
+        public async Task DeleteIndexAsync(string bucketName, string indexName)
+        {
+            var request = new DeleteIndexRequest
+            {
+                VectorBucketName = bucketName,
+                IndexName = indexName
+            };
+
+            await client.DeleteIndexAsync(request);
+        }
     }
 }
 
