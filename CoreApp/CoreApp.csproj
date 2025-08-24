@@ -10,6 +10,7 @@
 		<PackageReference Include="AWSSDK.BedrockRuntime" Version="4.0.4.1" />
 		<PackageReference Include="AWSSDK.S3" Version="4.0.6.8" />
 		<PackageReference Include="AWSSDK.S3Vectors" Version="4.0.1.3" />
+		<PackageReference Include="Markdig" Version="0.41.3" />
 	</ItemGroup>
 	
 </Project>

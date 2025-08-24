@@ -1,5 +1,6 @@
 ﻿using Amazon.S3Vectors;
 using Amazon.S3Vectors.Model;
+using CoreApp.Models;
 using System.Numerics;
 
 namespace CoreApp.Services
@@ -33,7 +34,45 @@ namespace CoreApp.Services
             Console.WriteLine("Embedding inserted successfully.");
         }
 
-        public async Task<List<string>> QueryEmbeddingAsync(string bucket, string index, float[] queryVector)
+        public async Task<List<VectorResult>> QueryEmbeddingAsync(string bucket, string index, float[] queryVector)
+        {
+            var request = new QueryVectorsRequest
+            {
+                VectorBucketName = bucket,
+                IndexName = index,
+                QueryVector = new VectorData { Float32 = new List<float>(queryVector) },
+                TopK = 5,
+                ReturnDistance = true,
+                ReturnMetadata = true
+            };
+
+            var response = await client.QueryVectorsAsync(request);
+
+            List<VectorResult> results = new List<VectorResult>();
+
+            foreach (var vector in response.Vectors)
+            {
+                string documentText = "";
+
+                if (vector.Metadata.IsDictionary())
+                {
+                    // Flatten metadata into a string
+                    documentText = string.Join("; ",
+                        vector.Metadata.AsDictionary().Select(kv => $"{kv.Key}: {kv.Value}"));
+                }
+
+                results.Add(new VectorResult
+                {
+                    Document = $"Key: {vector.Key} | {documentText}",
+                    Score = (float)(1 - vector.Distance)!  // AWS returns *distance*, convert to similarity score
+                });
+            }
+
+            return results;
+        }
+
+
+        public async Task<List<string>> QueryEmbeddingAsyncOld(string bucket, string index, float[] queryVector)
         {
             var request = new QueryVectorsRequest
             {

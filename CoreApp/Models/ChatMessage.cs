@@ -12,4 +12,9 @@ namespace CoreApp.Models
         public string? Content { get; set; }
     }
 
+    public class VectorResult
+    {
+        public string Document { get; set; } = string.Empty;
+        public float Score { get; set; }
+    }
 }

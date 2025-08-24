@@ -1,24 +1,30 @@
 ﻿@page "/chat"
 @using CoreApp.Models
 @using CoreApp.Services
+@using Markdig
+@using Microsoft.AspNetCore.Components.Web
 @inject AwsChatService ChatService
 @inject AwsEmbeddingService EmbeddingService
 @inject AwsVectorStoreService VectorStoreService
-@inject AIAppSettings AppSettings
+@inject GlobalState GlobalState
+@inject IJSRuntime JS
 @rendermode InteractiveServer
 
-<h3>AI Chat</h3>
+<h3 class="text-xl font-bold mb-3">AI Chat</h3>
 
 <div class="chat-container">
-    <div class="chat-messages" @ref="chatScrollRef">
+    <!-- Messages -->
+    <div class="chat-messages">
         @foreach (var msg in messages)
         {
             <div class="chat-message @msg.Role">
-                <div class="bubble">@msg.Content</div>
+                <div class="bubble">@((MarkupString)Markdown.ToHtml(msg.Content ?? string.Empty))</div>
             </div>
         }
+        <div @ref="chatEndRef"></div>
     </div>
 
+    <!-- Input bar -->
     <div class="chat-input-bar">
         <input type="text"
                @bind="userInput"
@@ -36,54 +42,70 @@
 @code {
     private string userInput = "";
     private List<ChatMessage> messages = new();
-    private ElementReference chatScrollRef;
+    private ElementReference chatEndRef;
     private string? bucketName;
     private string? indexName;
+    private float threshold = 0.3f;
 
     protected override void OnInitialized()
     {
-        bucketName = AppSettings.BucketName!;
-        indexName = AppSettings.IndexName!;
+        bucketName = GlobalState.CurrentBucket;
+        indexName = GlobalState.CurrentIndex;
     }
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
-        {
             await SendMessage();
-        }
     }
 
     private async Task SendMessage()
     {
         if (string.IsNullOrWhiteSpace(userInput)) return;
 
+        // Add user message
         messages.Add(new ChatMessage { Role = "user", Content = userInput });
 
+        // Generate embedding and query vector store
         var embedding = await EmbeddingService.GenerateEmbeddingAsync(userInput);
-        var relatedDocs = await VectorStoreService.QueryEmbeddingAsync(bucketName, indexName, embedding);
+        var relatedDocs = await VectorStoreService.QueryEmbeddingAsync(bucketName!, indexName!, embedding);
 
-        if (relatedDocs.Any())
+        var highConfidenceDocs = relatedDocs
+            .Where(r => r.Score >= threshold)
+            .ToList();
+
+        if (highConfidenceDocs.Any())
         {
-            messages.Add(new ChatMessage { Role = "assistant", Content = $"📚 Related documents:\n{string.Join("\n", relatedDocs)}" });
+            messages.Add(new ChatMessage
+            {
+                Role = "assistant",
+                Content = $"### 📚 Related Documents\n\n" +
+                          string.Join("\n", highConfidenceDocs.Select(d => $"- {d.Document} (score: {d.Score:F2})"))
+            });
+        }
+        else
+        {
+            messages.Add(new ChatMessage
+            {
+                Role = "assistant",
+                Content = "❌ Not found in related documents (all results below threshold)."
+            });
         }
 
+        // AI model response
         var response = await ChatService.GetResponseAsync(messages);
         messages.Add(new ChatMessage { Role = "assistant", Content = response });
 
         userInput = "";
-        StateHasChanged(); // Refresh UI
+        StateHasChanged();
 
-        userInput = "";
+        // Auto-scroll
         await ScrollToBottom();
-
     }
-
 
     private async Task ScrollToBottom()
     {
-        await Task.Delay(100); // wait for UI to update
-        await chatScrollRef.FocusAsync(); // triggers scroll
+        await Task.Delay(50); // wait for UI render
+        await JS.InvokeVoidAsync("scrollToBottom", chatEndRef);
     }
-
 }
